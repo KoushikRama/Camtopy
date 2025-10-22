@@ -48,11 +48,18 @@ class Camera_App(QWidget): #Inherits basic GUI window
         self.pause_btn.clicked.connect(self.toggle_pause)
         self.pause_btn.hide()  # hidden at start
 
+        #Timer for the video
+        self.video_timer = QLabel("00:00")
+        self.video_timer.setStyleSheet("color: red; font-size: 24px; font-weight: bold;")
+        #self.video_timer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.video_timer.hide()
+
         #Creating a vertical layout for the buttons
         btn_layout = QVBoxLayout()
         btn_layout.addWidget(self.photo_btn)
         btn_layout.addWidget(self.video_btn)
         btn_layout.addWidget(self.pause_btn)
+        btn_layout.addWidget(self.video_timer)
         btn_layout.addStretch()
         btn_layout.addSpacing(20)
         btn_layout.setContentsMargins(10,250,10,10)
@@ -71,11 +78,15 @@ class Camera_App(QWidget): #Inherits basic GUI window
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(20)
 
+        
         self.is_recording = False # True if recording
         self.is_paused = False # True if recording is paused
         self.out = None # Object for saving the video
         self.vfilename = None #video file
         self.pfilename = None #photo file
+        self.record_seconds = 0
+        self.timer_count = QTimer()
+        self.timer_count.timeout.connect(self.update_timer)
     
     def update_frame(self):
         ret, frame = self.cam.read()
@@ -88,6 +99,11 @@ class Camera_App(QWidget): #Inherits basic GUI window
             pixmap = QPixmap.fromImage(qimg)
             pixmap = pixmap.scaled(self.videoLabel.width(), self.videoLabel.height(), Qt.AspectRatioMode.KeepAspectRatio)
             self.videoLabel.setPixmap(pixmap)
+
+    def update_timer(self):
+        self.record_seconds+=1
+        mins,secs = divmod(self.record_seconds, 60)
+        self.video_timer.setText(f"{mins:02d}:{secs:02d}")
 
     def capture_photo(self):
         ret, frame = self.cam.read()
@@ -105,6 +121,10 @@ class Camera_App(QWidget): #Inherits basic GUI window
             self.out = cv2.VideoWriter(self.vfilename,cv2.VideoWriter_fourcc(*'mp4v'),20,(width,height))
             #start recording
             self.is_recording=True
+            self.record_seconds=0
+            self.video_timer.setText("00:00")
+            self.video_timer.show()
+            self.timer_count.start(1000)
             self.video_btn.setIcon(QIcon('pictures/Stop.png'))
             self.pause_btn.show()
         else:
@@ -112,6 +132,9 @@ class Camera_App(QWidget): #Inherits basic GUI window
             self.is_recording=False
             self.video_btn.setIcon(QIcon('pictures/Video.png'))
             self.pause_btn.hide()
+            self.timer_count.stop()
+            self.video_timer.hide()
+            self.video_timer.setText("00:00")
             if self.out:
                 self.out.release() # saving the video by releasing the camera capture output
             QMessageBox.information(self,"Recording stopped", f"Saved as {self.vfilename}")
@@ -121,10 +144,12 @@ class Camera_App(QWidget): #Inherits basic GUI window
             self.is_paused=True
             self.pause_btn.setIcon(QIcon('pictures/Resume.png'))
             print("Recording Paused")
+            self.timer_count.stop()
         else:
             self.is_paused = False
             self.pause_btn.setIcon(QIcon('pictures/Pause.png'))
             print("Recording Paused")
+            self.timer_count.start(1000)
 
     def closeEvent(self, event):
         self.cam.release()
