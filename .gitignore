@@ -21,8 +21,6 @@ output.avi
 *.avi
 *.mp4
 *.mov
-*.jpg
-*.png
 
 # Logs
 *.log
