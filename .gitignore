@@ -1,0 +1,28 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+env/
+venv/
+
+# IDE folders
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Output videos/images you don’t want to track
+output.avi
+*.avi
+*.mp4
+*.mov
+*.jpg
+*.png
+
+# Logs
+*.log
