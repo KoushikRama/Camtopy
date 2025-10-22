@@ -51,7 +51,8 @@ class Camera_App(QWidget): #Inherits basic GUI window
         #Timer for the video
         self.video_timer = QLabel("00:00")
         self.video_timer.setStyleSheet("color: red; font-size: 24px; font-weight: bold;")
-        #self.video_timer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.video_timer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.video_timer.setFixedSize(70,100)
         self.video_timer.hide()
 
         #Creating a vertical layout for the buttons
