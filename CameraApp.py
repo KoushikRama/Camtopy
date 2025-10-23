@@ -1,7 +1,8 @@
 import cv2
 import sys
 import random
-from PyQt6.QtWidgets import QApplication, QPushButton, QLabel,QHBoxLayout, QVBoxLayout, QWidget, QMessageBox
+import numpy as np
+from PyQt6.QtWidgets import QApplication, QPushButton, QLabel,QHBoxLayout, QVBoxLayout, QWidget, QMessageBox, QScrollArea
 from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QImage, QIcon, QPixmap
 
@@ -55,20 +56,78 @@ class Camera_App(QWidget): #Inherits basic GUI window
         self.video_timer.setFixedSize(70,100)
         self.video_timer.hide()
 
+        #Filters
+        self.active_filter="Normal"
+        self.active_filter_btn= None
+
+        # Filter Buttons in a layout
+        self.filter_btn = QWidget()
+        self.filter_layout = QVBoxLayout(self.filter_btn)
+        self.filter_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        #Adding a label at the top of the widget.
+        self.filter_label = QLabel("Filters")
+        self.filter_label.setStyleSheet("color: #5a9bd5; font-size: 20px;")
+        self.filter_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.filter_layout.addWidget(self.filter_label)
+
+        # filters and icons
+        self.filters = {
+            "Normal": "pictures/Normal.png",
+            "Grayscale": "pictures/GrayScale.png",
+            "Sepia": "pictures/Sepia.png",
+            "Cartoon": "pictures/Cartoon.png",
+            "Blur":"pictures/Blur.png"
+        }
+
+        #A loop to create individual filter buttons and add them in the layout created
+        for name, icon_path in self.filters.items():
+            # A label of filter name for each filter 
+            fllbl = QLabel(name)
+            fllbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            fllbl.setStyleSheet("color: white; font-size: 14px;")
+            # Button for each filter
+            btn = QPushButton()
+            btn.setIcon(QIcon(icon_path))
+            btn.setFixedSize(170,170)
+            btn.setIconSize(QSize(150,150))
+            btn.setStyleSheet("border: none; background-color: #3a3a3a;")
+            btn.clicked.connect(lambda _, n=name,b=btn: self.set_filter(n,b))
+            if name == "Normal":
+                self.set_filter(name,btn)
+            #Adding label and button in layout
+            self.filter_layout.addWidget(fllbl)
+            self.filter_layout.addWidget(btn)
+            self.filter_layout.addSpacing(2)
+            self.filter_layout.setContentsMargins(0,0,0,0)
+        
+        #Making the filters scrollable
+        self.filter_scroll=QScrollArea()
+        self.filter_scroll.setWidgetResizable(True)
+        self.filter_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.filter_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.filter_scroll.setWidget(self.filter_btn)
+        self.filter_scroll.setFixedWidth(170)
+        self.filter_scroll.setStyleSheet("background-color: #2a2a2a; border: none;")
+        
+
+
         #Creating a vertical layout for the buttons
         btn_layout = QVBoxLayout()
         btn_layout.addWidget(self.photo_btn)
+        btn_layout.addSpacing(15)
         btn_layout.addWidget(self.video_btn)
+        btn_layout.addSpacing(15)
         btn_layout.addWidget(self.pause_btn)
         btn_layout.addWidget(self.video_timer)
         btn_layout.addStretch()
-        btn_layout.addSpacing(20)
-        btn_layout.setContentsMargins(10,250,10,10)
+        btn_layout.setContentsMargins(10,200,10,10)
 
-        #Integrating the viewwindow and btn_layout
+        #Integrating the viewwindow and btn_layout and filter_layout
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.videoLabel)#left
-        main_layout.addLayout(btn_layout)#right
+        main_layout.addLayout(btn_layout)#Middle
+        main_layout.addWidget(self.filter_scroll)#right
         main_layout.setContentsMargins(10,10,10,10)
 
         # setting the final layout
@@ -92,14 +151,56 @@ class Camera_App(QWidget): #Inherits basic GUI window
     def update_frame(self):
         ret, frame = self.cam.read()
         if ret:
+            frame = self.apply_filter(frame, self.active_filter)
+
             if self.is_recording and not self.is_paused and self.out:
-                self.out.write(frame)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = frame.shape
-            qimg = QImage(frame.data, w, h, ch * w, QImage.Format.Format_RGB888)
+                self.out.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+            if len(frame.shape) == 2:  # Grayscale
+                qimg = QImage(frame.data, frame.shape[1], frame.shape[0], frame.shape[1],
+                              QImage.Format.Format_Grayscale8)
+            else:
+                qimg = QImage(frame.data, frame.shape[1], frame.shape[0], frame.shape[1]*3,
+                              QImage.Format.Format_RGB888)
             pixmap = QPixmap.fromImage(qimg)
             pixmap = pixmap.scaled(self.videoLabel.width(), self.videoLabel.height(), Qt.AspectRatioMode.KeepAspectRatio)
             self.videoLabel.setPixmap(pixmap)
+
+    def set_filter(self,name,btn):
+        if self.active_filter_btn:
+            self.active_filter_btn.setStyleSheet("border: none; background-color: #3a3a3a;")
+        self.active_filter_btn = btn
+        self.active_filter = name
+        btn.setStyleSheet("border: none; background-color: #5a9bd5;")  # blue tint
+        print(f"Filter applied: {name}")
+        
+    def apply_filter(self,frame,filter_name):
+
+        if filter_name == "Grayscale":
+            return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        elif filter_name == "Sepia":
+            sepia = cv2.transform(frame, np.array([
+                [0.272, 0.534, 0.131],
+                [0.349, 0.686, 0.168],
+                [0.393, 0.769, 0.189]
+            ]))
+            sepia = np.clip(sepia,0,255).astype(np.uint8)
+            return cv2.cvtColor(sepia, cv2.COLOR_BGR2RGB)
+        
+        elif filter_name == "Cartoon":
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.medianBlur(gray, 5)
+            edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                          cv2.THRESH_BINARY, 9, 9)
+            color = cv2.bilateralFilter(frame, 9, 250, 250)
+            cartoon = cv2.bitwise_and(color, color, mask=edges)
+            return cv2.cvtColor(cartoon, cv2.COLOR_BGR2RGB)
+        
+        elif filter_name=="Blur":
+            return cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), (15,15), 0)
+        else:
+            return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     def update_timer(self):
         self.record_seconds+=1
