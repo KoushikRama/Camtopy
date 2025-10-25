@@ -1,7 +1,14 @@
 import cv2
 import sys
+import os
 import random
 import numpy as np
+import sounddevice as sd
+import soundfile as sf
+import threading
+import moviepy.audio.io.AudioFileClip as AudioFileClip
+import imageio_ffmpeg as ffmpeg
+import subprocess
 from PyQt6.QtWidgets import QApplication, QPushButton, QLabel,QHBoxLayout, QVBoxLayout, QWidget, QMessageBox, QScrollArea
 from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QImage, QIcon, QPixmap
@@ -19,9 +26,10 @@ class Camera_App(QWidget): #Inherits basic GUI window
         self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-        #Webcam view setting
+        #Webcam view setting 
         self.videoLabel = QLabel()
-        self.videoLabel.setFixedSize(960,720)
+        self.videoLabel.setFixedSize(910,540)
+        self.videoLabel.setStyleSheet("background-color: black; border: 2px solid #444; border-radius: 20px")
 
         #Buttons setting
         #Photo button
@@ -136,7 +144,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
         #Timer to update the frames every 20ms about a 22 FPS
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
-        self.timer.start(20)
+        self.timer.start(31)
 
         
         self.is_recording = False # True if recording
@@ -147,6 +155,10 @@ class Camera_App(QWidget): #Inherits basic GUI window
         self.record_seconds = 0
         self.timer_count = QTimer()
         self.timer_count.timeout.connect(self.update_timer)
+        self.afilename = None #Temporary audio file
+        self.finalname = None #Merged final video
+        self.audio_thread = None #Thread for recording audio
+        self.audio_frames = []  #To store audio data
     
     def update_frame(self):
         ret, frame = self.cam.read()
@@ -156,10 +168,10 @@ class Camera_App(QWidget): #Inherits basic GUI window
             if self.is_recording and not self.is_paused and self.out:
                 self.out.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
-            if len(frame.shape) == 2:  # Grayscale
+            if len(frame.shape) == 2:  # Grayscale case
                 qimg = QImage(frame.data, frame.shape[1], frame.shape[0], frame.shape[1],
                               QImage.Format.Format_Grayscale8)
-            else:
+            else: # All other cases
                 qimg = QImage(frame.data, frame.shape[1], frame.shape[0], frame.shape[1]*3,
                               QImage.Format.Format_RGB888)
             pixmap = QPixmap.fromImage(qimg)
@@ -201,6 +213,39 @@ class Camera_App(QWidget): #Inherits basic GUI window
             return cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), (15,15), 0)
         else:
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+    def record_audio(self):
+        fs = 44100 
+        self.audio_frames = []
+        def callback(indata, frames, time, status):
+            if self.is_recording and not self.is_paused:
+                self.audio_frames.append(indata.copy())
+
+        with sd.InputStream(samplerate=fs, channels=2, callback=callback):
+            while self.is_recording:
+                sd.sleep(100)
+        audio_data = np.concatenate(self.audio_frames, axis=0)
+
+        sf.write(self.afilename, audio_data, fs)
+
+    def merge_audio_video(self):
+        ffmpeg_path = ffmpeg.get_ffmpeg_exe()
+        command = [
+            ffmpeg_path,
+            "-y",
+            "-i", self.vfilename,    
+            "-i", self.afilename,      
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-strict", "experimental",
+            self.finalname
+        ]
+        
+        try:
+            subprocess.run(command, check=True)
+            print(f"Merged file saved as {self.finalname}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error merging: {e}")
 
     def update_timer(self):
         self.record_seconds+=1
@@ -216,30 +261,38 @@ class Camera_App(QWidget): #Inherits basic GUI window
 
     def capture_video(self):
         if not self.is_recording:
-            # Setting to capture the video
             width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            self.vfilename = f"video_{random.randint(1,999999)}.mp4"
-            self.out = cv2.VideoWriter(self.vfilename,cv2.VideoWriter_fourcc(*'mp4v'),20,(width,height))
-            #start recording
-            self.is_recording=True
-            self.record_seconds=0
+            self.vfilename = f"temp_{random.randint(1,999999)}.mp4"
+            self.afilename = f"audio_{random.randint(1,999999)}.wav"
+            self.finalname = f"video_{random.randint(1,999999)}.mp4"
+            self.audio_thread = threading.Thread(target=self.record_audio)
+            self.audio_thread.start()
+            self.is_recording = True
+            self.out = cv2.VideoWriter(self.vfilename, cv2.VideoWriter_fourcc(*'mp4v'), 31, (width, height))
+            self.record_seconds = 0
             self.video_timer.setText("00:00")
             self.video_timer.show()
             self.timer_count.start(1000)
-            self.video_btn.setIcon(QIcon('pictures/Stop.png'))
+            self.video_btn.setIcon(QIcon("pictures/Stop.png"))
             self.pause_btn.show()
+
         else:
-            # stop recording
-            self.is_recording=False
-            self.video_btn.setIcon(QIcon('pictures/Video.png'))
+
+            self.is_recording = False
+            if self.audio_thread:
+                self.audio_thread.join()
+            self.video_btn.setIcon(QIcon("pictures/Video.png"))
             self.pause_btn.hide()
-            self.timer_count.stop()
             self.video_timer.hide()
-            self.video_timer.setText("00:00")
+            self.timer_count.stop()
             if self.out:
-                self.out.release() # saving the video by releasing the camera capture output
-            QMessageBox.information(self,"Recording stopped", f"Saved as {self.vfilename}")
+                self.out.release()
+
+            self.merge_audio_video()
+            os.remove(self.vfilename)
+            os.remove(self.afilename)
+            QMessageBox.information(self, "Recording Stopped", f"Saved as {self.finalname}")
 
     def toggle_pause(self):
         if not self.is_paused:
