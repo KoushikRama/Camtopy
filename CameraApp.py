@@ -6,7 +6,6 @@ import numpy as np
 import sounddevice as sd
 import soundfile as sf
 import threading
-import moviepy.audio.io.AudioFileClip as AudioFileClip
 import imageio_ffmpeg as ffmpeg
 import subprocess
 from PyQt6.QtWidgets import QApplication, QPushButton, QLabel,QHBoxLayout, QVBoxLayout, QWidget, QMessageBox, QScrollArea
@@ -17,7 +16,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
     def __init__(self):
         super().__init__()
         #window setting
-        self.setWindowTitle("Mini Camera App")
+        self.setWindowTitle("PyCam")
         self.setStyleSheet("background-color: #1e1e1e; color: white")
         self.setFixedSize(1280,720)
         
