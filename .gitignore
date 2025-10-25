@@ -19,7 +19,6 @@ Thumbs.db
 # Output videos/images you don’t want to track
 output.avi
 *.avi
-*.mp4
 *.mov
 
 # Logs
