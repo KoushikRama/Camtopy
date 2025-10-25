@@ -13,6 +13,10 @@
 - ffmpeg: Merge Audio with video recording
 - PyQt: Used to create a UI
 
+### User Interface:
+
+![alt Text](pictures/CAM_APP.png)
+
 ### Demo:
 
 [![PyCam Demo](https://img.youtube.com/vi/ihAqLsUjUN4/0.jpg)](https://youtu.be/ihAqLsUjUN4)
