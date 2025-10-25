@@ -15,4 +15,4 @@
 
 ### Demo:
 
-[![Demo](PYCAM_APP_REC.mp4)](PYCAM_APP_REC.mp4)
+[Click here](PYCAM_APP_REC.mp4)
