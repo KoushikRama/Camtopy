@@ -15,7 +15,7 @@
 
 ### User Interface:
 
-![alt Text](pictures/CAM_APP.png)
+![alt Text](pictures/CAM_APP.png) 
 
 ### Demo:
 
