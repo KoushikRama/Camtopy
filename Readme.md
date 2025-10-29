@@ -1,11 +1,14 @@
-## PyCam:
+<h1>
+  <img src="Icon.png" alt="Camtopy Logo" width="150" height="150">
+  Camptopy
+</h1>
 
-`PyCam` is a desktop Camera application built entirely with python, designed to provide basic Camera functionality with some fun filters.
+`Camtopy` is a desktop Camera application built entirely with python, designed to provide basic Camera functionality with some fun filters.
 
-### Features:
-- Photo Capture – Take snapshots with your webcam.
-- Video Recording – Record videos.
-- Filters – Apply live filters like Grayscale, Sepia, Cartoon, and Blur.
+### ✨Features:
+- 📷 Photo Capture – Take snapshots with your webcam.
+- 🎥 Video Recording – Record videos.
+- 🎨 Filters – Apply live filters like Grayscale, Sepia, Cartoon, and Blur.
 
 ### Technology/Libraries:
 - OpenCv: Image and video capture

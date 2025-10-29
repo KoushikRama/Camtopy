@@ -12,11 +12,19 @@ from PyQt6.QtWidgets import QApplication, QPushButton, QLabel,QHBoxLayout, QVBox
 from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QImage, QIcon, QPixmap
 
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        base_path = sys._MEIPASS  # PyInstaller temporary folder
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 class Camera_App(QWidget): #Inherits basic GUI window
     def __init__(self):
         super().__init__()
         #window setting
-        self.setWindowTitle("PyCam")
+        self.setWindowTitle("Camtopy")
         self.setStyleSheet("background-color: #1e1e1e; color: white")
         self.setFixedSize(1280,720)
         
@@ -33,7 +41,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
         #Buttons setting
         #Photo button
         self.photo_btn = QPushButton()
-        self.photo_btn.setIcon(QIcon("pictures/Picture.png"))
+        self.photo_btn.setIcon(QIcon(resource_path("pictures/Picture.png")))
         self.photo_btn.setIconSize(QSize(60,60))
         self.photo_btn.setFixedSize(80,80)
         self.photo_btn.setStyleSheet("border-radius: 40px; border:none; background-color: #2e2e2e;") 
@@ -41,7 +49,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
 
         #Video button
         self.video_btn = QPushButton()
-        self.video_btn.setIcon(QIcon("pictures/Video.png"))
+        self.video_btn.setIcon(QIcon(resource_path("pictures/Video.png")))
         self.video_btn.setIconSize(QSize(60,60))
         self.video_btn.setFixedSize(80,80)
         self.video_btn.setStyleSheet("border-radius: 40px; border:none; background-color: #2e2e2e;") 
@@ -49,7 +57,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
 
         #pause button
         self.pause_btn = QPushButton()
-        self.pause_btn.setIcon(QIcon("pictures/Pause.png"))
+        self.pause_btn.setIcon(QIcon(resource_path("pictures/Pause.png")))
         self.pause_btn.setIconSize(QSize(60, 60))
         self.pause_btn.setFixedSize(80, 80)
         self.pause_btn.setStyleSheet("border-radius: 40px; border: none; background-color: #2e2e2e;")
@@ -95,7 +103,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
             fllbl.setStyleSheet("color: white; font-size: 14px;")
             # Button for each filter
             btn = QPushButton()
-            btn.setIcon(QIcon(icon_path))
+            btn.setIcon(QIcon(resource_path(icon_path)))
             btn.setFixedSize(170,170)
             btn.setIconSize(QSize(150,150))
             btn.setStyleSheet("border: none; background-color: #3a3a3a;")
@@ -158,6 +166,8 @@ class Camera_App(QWidget): #Inherits basic GUI window
         self.finalname = None #Merged final video
         self.audio_thread = None #Thread for recording audio
         self.audio_frames = []  #To store audio data
+
+
     
     def update_frame(self):
         ret, frame = self.cam.read()
@@ -273,7 +283,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
             self.video_timer.setText("00:00")
             self.video_timer.show()
             self.timer_count.start(1000)
-            self.video_btn.setIcon(QIcon("pictures/Stop.png"))
+            self.video_btn.setIcon(QIcon(resource_path("pictures/Stop.png")))
             self.pause_btn.show()
 
         else:
@@ -281,7 +291,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
             self.is_recording = False
             if self.audio_thread:
                 self.audio_thread.join()
-            self.video_btn.setIcon(QIcon("pictures/Video.png"))
+            self.video_btn.setIcon(QIcon(resource_path("pictures/Video.png")))
             self.pause_btn.hide()
             self.video_timer.hide()
             self.timer_count.stop()
@@ -296,12 +306,12 @@ class Camera_App(QWidget): #Inherits basic GUI window
     def toggle_pause(self):
         if not self.is_paused:
             self.is_paused=True
-            self.pause_btn.setIcon(QIcon('pictures/Resume.png'))
+            self.pause_btn.setIcon(QIcon(resource_path('pictures/Resume.png')))
             print("Recording Paused")
             self.timer_count.stop()
         else:
             self.is_paused = False
-            self.pause_btn.setIcon(QIcon('pictures/Pause.png'))
+            self.pause_btn.setIcon(QIcon(resource_path('pictures/Pause.png')))
             print("Recording Paused")
             self.timer_count.start(1000)
 
@@ -315,6 +325,7 @@ class Camera_App(QWidget): #Inherits basic GUI window
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(resource_path("Icon.png")))
     window = Camera_App()
     window.show()
     sys.exit(app.exec())
