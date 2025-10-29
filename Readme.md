@@ -1,5 +1,5 @@
 <h1>
-  <img src="Icon.png" alt="Camtopy Logo" width="30" height="30">
+  <img src="Icon.png" alt="Camtopy Logo" width="40" height="43">
   Camtopy
 </h1>
 
