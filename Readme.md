@@ -1,6 +1,6 @@
 <h1>
-  <img src="Icon.png" alt="Camtopy Logo" width="150" height="150">
-  Camptopy
+  <img src="Icon.png" alt="Camtopy Logo" width="30" height="30">
+  Camtopy
 </h1>
 
 `Camtopy` is a desktop Camera application built entirely with python, designed to provide basic Camera functionality with some fun filters.
